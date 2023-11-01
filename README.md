@@ -27,6 +27,8 @@ Skopeo is used to have a weightless resource and to operate _rootlessly_.
 
 Please follow [official Trivy documentation](https://aquasecurity.github.io/trivy/v0.19.2/getting-started/quickstart) to know more about os vulnerability scanning of docker images
 
+This Docker file and other files are copied from [this official Github Repo](https://github.com/Comcast/trivy-resource/). 
+
 ## Source Configuration
 
 The configurations are split between source and params. The source configurations are earmarked such that they might 

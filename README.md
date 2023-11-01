@@ -21,13 +21,9 @@ Scans docker image for os and library vunerabilities using [Trivy](https://aquas
 
 ### Note
 
->This resource makes use of [Skopeo](https://github.com/containers/skopeo) to download docker images from registry _dockerlessly_. This 
-is installed from alpine repo. 
-Skopeo is used to have a weightless resource and to operate _rootlessly_.
-
 Please follow [official Trivy documentation](https://aquasecurity.github.io/trivy/v0.19.2/getting-started/quickstart) to know more about os vulnerability scanning of docker images
 
-This Docker file and other files are copied from [this official Github Repo](https://github.com/Comcast/trivy-resource/). 
+This Docker file and other files are sourced from [this official Github Repo](https://github.com/Comcast/trivy-resource/). 
 
 ## Source Configuration
 

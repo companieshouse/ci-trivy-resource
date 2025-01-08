@@ -15,3 +15,8 @@ RUN apk update && apk upgrade && \
     apk del curl && \
     chmod +x /opt/resource/*
 
+# Copy the preloaded Trivy database from the Trivy database image
+COPY --from=our-ecr-repo/trivy-db:latest /root/.cache/trivy /root/.cache/trivy
+
+# Skip the default database update, since we're using the ECR cached database
+ENV TRIVY_SKIP_UPDATE=true

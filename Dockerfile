@@ -14,9 +14,3 @@ RUN apk update && apk upgrade && \
     curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin && \
     apk del curl && \
     chmod +x /opt/resource/*
-
-# Copy the preloaded Trivy database from the Trivy database image
-COPY --from=our-ecr-repo/trivy-db:latest /root/.cache/trivy /root/.cache/trivy
-
-# Skip the default database update, since we're using the ECR cached database
-ENV TRIVY_SKIP_UPDATE=true

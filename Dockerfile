@@ -15,3 +15,5 @@ RUN apk update && apk upgrade && \
     apk del curl && \
     chmod +x /opt/resource/*
 
+# Skip the default database update, since we're using the ECR cached database
+ENV TRIVY_SKIP_UPDATE=true

@@ -6,5 +6,4 @@ RUN apk add --no-cache curl && \
 
 # create a single-layer image from scratch
 FROM scratch
-COPY --from=builder / /
-CMD ["/bin/sh"]
+COPY --from=builder /root/.cache/trivy /root/.cache/trivy

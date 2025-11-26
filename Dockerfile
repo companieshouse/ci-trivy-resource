@@ -1,4 +1,4 @@
-FROM python:alpine3.14
+FROM python:alpine3.21
 
 COPY assets/ /opt/resource/
 
@@ -10,7 +10,10 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 # Rationale: https://github.com/hadolint/hadolint/wiki/DL3013
 RUN apk update && \
     apk upgrade && \
-    apk add --no-cache curl skopeo
+    apk add --no-cache \
+         bash~=5.2 \
+         curl \
+         skopeo
 
 # Install Python dependency
 RUN pip install --no-cache-dir requests==2.31.0

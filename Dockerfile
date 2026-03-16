@@ -13,7 +13,8 @@ RUN apk update && \
     apk add --no-cache \
          bash~=5.2 \
          curl \
-         skopeo
+         skopeo \
+         jq
 
 # Install Python dependency
 RUN pip install --no-cache-dir requests==2.31.0

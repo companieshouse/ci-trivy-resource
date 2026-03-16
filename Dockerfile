@@ -11,9 +11,10 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 RUN apk update && \
     apk upgrade && \
     apk add --no-cache \
-         bash~=5.2 \
-         curl \
-         skopeo
+         bash=5.2.37-r0 \
+         curl=8.14.1-r2 \
+         jq=1.7.1-r0 \
+         skopeo=1.16.1-r5
 
 # Install Python dependency
 RUN pip install --no-cache-dir requests==2.31.0

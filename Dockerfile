@@ -5,8 +5,7 @@ ARG cosign_checksum=c956e5dfcac53d52bcf058360d579472f0c1d2d9b69f55209e256fe7783f
 ARG trivy_version=0.70.0
 ARG trivy_checksum=8b4376d5d6befe5c24d503f10ff136d9e0c49f9127a4279fd110b727929a5aa9
 
-# Set SHELL flags for RUN commands to allow -e and pipefail
-# Rationale: https://github.com/hadolint/hadolint/wiki/DL4006
+# Set errexit, nounset, and pipefail shell options for added safety
 SHELL ["/bin/ash", "-euo", "pipefail", "-c"]
 
 RUN apk update && \
@@ -16,7 +15,7 @@ RUN apk update && \
         curl=8.14.1-r2 \
         outils-sha256=0.13-r1
 
-# Download, verify, and install Cosign (SHA256 checksum and Cosign signature verification)
+# Download, verify, and install Cosign
 RUN curl -fsSLO https://github.com/sigstore/cosign/releases/download/v${cosign_version}/cosign-linux-amd64 && \
     curl -fsSLO https://github.com/sigstore/cosign/releases/download/v${cosign_version}/cosign-linux-amd64.sigstore.json && \
     echo "${cosign_checksum}  cosign-linux-amd64" | sha256sum -c - && \
@@ -30,7 +29,7 @@ RUN curl -fsSLO https://github.com/sigstore/cosign/releases/download/v${cosign_v
         cosign-linux-amd64 \
         cosign-linux-amd64.sigstore.json
 
-# Download, verify, and install Trivy (SHA256 checksum and Cosign signature verification)
+# Download, verify, and install Trivy
 RUN curl -fsSLO "https://github.com/aquasecurity/trivy/releases/download/v${trivy_version}/trivy_${trivy_version}_Linux-64bit.tar.gz" && \
     curl -fsSLO "https://github.com/aquasecurity/trivy/releases/download/v${trivy_version}/trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json" && \
     echo "${trivy_checksum}  trivy_${trivy_version}_Linux-64bit.tar.gz" | sha256sum -c - && \

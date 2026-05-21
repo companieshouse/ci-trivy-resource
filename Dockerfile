@@ -33,9 +33,9 @@ RUN curl -fsSLO "https://github.com/aquasecurity/trivy/releases/download/v${triv
     curl -fsSLO "https://github.com/aquasecurity/trivy/releases/download/v${trivy_version}/trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json" && \
     echo "${trivy_checksum} trivy_${trivy_version}_Linux-64bit.tar.gz" | sha256sum -c - && \
     cosign verify-blob \
-        --bundle trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json \
+        --bundle "trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json" \
         --certificate-identity "https://github.com/aquasecurity/trivy/.github/workflows/reusable-release.yaml@refs/tags/v${trivy_version}" \
-        --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+        --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
         trivy_${trivy_version}_Linux-64bit.tar.gz && \
     tar -xzf trivy_${trivy_version}_Linux-64bit.tar.gz --strip-components=0 trivy && \
     install -m 0755 trivy /usr/local/bin/trivy && \

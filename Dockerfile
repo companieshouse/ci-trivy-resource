@@ -37,13 +37,12 @@ RUN curl -fsSLO "https://github.com/aquasecurity/trivy/releases/download/v${triv
         --bundle "trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json" \
         --certificate-identity "https://github.com/aquasecurity/trivy/.github/workflows/reusable-release.yaml@refs/tags/v${trivy_version}" \
         --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-        trivy_${trivy_version}_Linux-64bit.tar.gz && \
-    tar -xzf trivy_${trivy_version}_Linux-64bit.tar.gz trivy && \
+        "trivy_${trivy_version}_Linux-64bit.tar.gz" && \
+    tar -xzf "trivy_${trivy_version}_Linux-64bit.tar.gz" trivy && \
     install -m 0755 trivy /usr/local/bin/trivy && \
-    rm -f \
-        trivy \
-        trivy_${trivy_version}_Linux-64bit.tar.gz \
-        trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json
+    rm -f trivy \
+        "trivy_${trivy_version}_Linux-64bit.tar.gz" \
+        "trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json"
 
 FROM python:alpine3.21
 

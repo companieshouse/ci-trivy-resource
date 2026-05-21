@@ -12,9 +12,9 @@ SHELL ["/bin/ash", "-euo", "pipefail", "-c"]
 RUN apk update && \
     apk upgrade && \
     apk add --no-cache \
-         bash=5.2.37-r0 \
-         curl=8.14.1-r2 \
-         outils-sha256=0.13-r1
+        bash=5.2.37-r0 \
+        curl=8.14.1-r2 \
+        outils-sha256=0.13-r1
 
 # Download, verify, and install Cosign (SHA256 checksum and Cosign signature verification)
 RUN curl -fsSLO https://github.com/sigstore/cosign/releases/download/v${cosign_version}/cosign-linux-amd64 && \

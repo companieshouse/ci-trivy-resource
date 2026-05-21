@@ -9,7 +9,7 @@ ARG trivy_checksum=8b4376d5d6befe5c24d503f10ff136d9e0c49f9127a4279fd110b727929a5
 
 # Set SHELL flags for RUN commands to allow -e and pipefail
 # Rationale: https://github.com/hadolint/hadolint/wiki/DL4006
-SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+SHELL ["/bin/ash", "-euo", "pipefail", "-c"]
 
 # Pin versions in pip.
 # Rationale: https://github.com/hadolint/hadolint/wiki/DL3013

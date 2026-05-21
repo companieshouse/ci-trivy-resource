@@ -1,6 +1,4 @@
-FROM python:alpine3.21
-
-COPY assets/ /opt/resource/
+FROM python:alpine3.21 AS builder
 
 ARG cosign_version=3.0.6
 ARG cosign_checksum=c956e5dfcac53d52bcf058360d579472f0c1d2d9b69f55209e256fe7783f4c74
@@ -11,22 +9,26 @@ ARG trivy_checksum=8b4376d5d6befe5c24d503f10ff136d9e0c49f9127a4279fd110b727929a5
 # Rationale: https://github.com/hadolint/hadolint/wiki/DL4006
 SHELL ["/bin/ash", "-euo", "pipefail", "-c"]
 
-# Pin versions in pip.
-# Rationale: https://github.com/hadolint/hadolint/wiki/DL3013
 RUN apk update && \
     apk upgrade && \
     apk add --no-cache \
          bash=5.2.37-r0 \
          curl=8.14.1-r2 \
-         jq=1.7.1-r0 \
-         outils-sha256=0.13-r1 \
-         skopeo=1.16.1-r5
+         outils-sha256=0.13-r1
 
-# Download, verify, and install Cosign (SHA256 checksum verification)
+# Download, verify, and install Cosign (SHA256 checksum and Cosign signature verification)
 RUN curl -fsSLO https://github.com/sigstore/cosign/releases/download/v${cosign_version}/cosign-linux-amd64 && \
+    curl -fsSLO https://github.com/sigstore/cosign/releases/download/v${cosign_version}/cosign-linux-amd64.sigstore.json && \
     echo "${cosign_checksum}  cosign-linux-amd64" | sha256sum -c - && \
     install -m 0755 cosign-linux-amd64 /usr/local/bin/cosign && \
-    rm cosign-linux-amd64
+    cosign verify-blob \
+        --bundle cosign-linux-amd64.sigstore.json \
+        --certificate-identity "keyless@projectsigstore.iam.gserviceaccount.com" \
+        --certificate-oidc-issuer "https://accounts.google.com" \
+        cosign-linux-amd64 && \
+    rm -f \
+        cosign-linux-amd64 \
+        cosign-linux-amd64.sigstore.json
 
 # Download, verify, and install Trivy (SHA256 checksum and Cosign signature verification)
 RUN curl -fsSLO "https://github.com/aquasecurity/trivy/releases/download/v${trivy_version}/trivy_${trivy_version}_Linux-64bit.tar.gz" && \
@@ -39,12 +41,27 @@ RUN curl -fsSLO "https://github.com/aquasecurity/trivy/releases/download/v${triv
         trivy_${trivy_version}_Linux-64bit.tar.gz && \
     tar -xzf trivy_${trivy_version}_Linux-64bit.tar.gz trivy && \
     install -m 0755 trivy /usr/local/bin/trivy && \
-    rm -f trivy \
+    rm -f \
+        trivy \
         trivy_${trivy_version}_Linux-64bit.tar.gz \
         trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json
 
+FROM python:alpine3.21
+
+# Install Concourse resource assets
+COPY assets/ /opt/resource/
+RUN chmod +x /opt/resource/*
+
+# Install package dependencies
+RUN apk update && \
+    apk upgrade && \
+    apk add --no-cache \
+         bash=5.2.37-r0 \
+         jq=1.7.1-r0 \
+         skopeo=1.16.1-r5
+
+# Install Trivy
+COPY --from=builder /usr/local/bin/trivy /usr/local/bin/trivy
+
 # Install Python dependency
 RUN pip install --no-cache-dir requests==2.31.0
-
-# Tidy up
-RUN apk del curl && chmod +x /opt/resource/*

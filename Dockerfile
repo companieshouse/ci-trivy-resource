@@ -24,14 +24,14 @@ RUN apk update && \
 
 # Download, verify, and install Cosign (SHA256 checksum verification)
 RUN curl -fsSLO https://github.com/sigstore/cosign/releases/download/v${cosign_version}/cosign-linux-amd64 && \
-    echo "${cosign_checksum} cosign-linux-amd64" | sha256sum -c - && \
+    echo "${cosign_checksum}  cosign-linux-amd64" | sha256sum -c - && \
     install -m 0755 cosign-linux-amd64 /usr/local/bin/cosign && \
     rm cosign-linux-amd64
 
 # Download, verify, and install Trivy (SHA256 checksum and Cosign signature verification)
 RUN curl -fsSLO "https://github.com/aquasecurity/trivy/releases/download/v${trivy_version}/trivy_${trivy_version}_Linux-64bit.tar.gz" && \
     curl -fsSLO "https://github.com/aquasecurity/trivy/releases/download/v${trivy_version}/trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json" && \
-    echo "${trivy_checksum} trivy_${trivy_version}_Linux-64bit.tar.gz" | sha256sum -c - && \
+    echo "${trivy_checksum}  trivy_${trivy_version}_Linux-64bit.tar.gz" | sha256sum -c - && \
     cosign verify-blob \
         --bundle "trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json" \
         --certificate-identity "https://github.com/aquasecurity/trivy/.github/workflows/reusable-release.yaml@refs/tags/v${trivy_version}" \

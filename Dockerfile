@@ -5,6 +5,7 @@ COPY assets/ /opt/resource/
 ARG cosign_version=3.0.6
 ARG cosign_checksum=c956e5dfcac53d52bcf058360d579472f0c1d2d9b69f55209e256fe7783f4c74
 ARG trivy_version=0.70.0
+ARG trivy_checksum=8b4376d5d6befe5c24d503f10ff136d9e0c49f9127a4279fd110b727929a5aa9
 
 # Set SHELL flags for RUN commands to allow -e and pipefail
 # Rationale: https://github.com/hadolint/hadolint/wiki/DL4006
@@ -22,22 +23,25 @@ RUN apk update && \
          skopeo=1.16.1-r5
 
 # Download, verify, and install Cosign (SHA256 checksum verification)
-RUN curl -OL https://github.com/sigstore/cosign/releases/download/v${cosign_version}/cosign-linux-amd64 && \
+RUN curl -fsSLO https://github.com/sigstore/cosign/releases/download/v${cosign_version}/cosign-linux-amd64 && \
     echo "${cosign_checksum} cosign-linux-amd64" | sha256sum -c - && \
     install -m 0755 cosign-linux-amd64 /usr/local/bin/cosign && \
     rm cosign-linux-amd64
 
-# Download, verify, and install Trivy (Cosign signature verification)
-RUN curl -OL https://github.com/aquasecurity/trivy/releases/download/v${trivy_version}/trivy_${trivy_version}_Linux-64bit.tar.gz && \
-    curl -OL https://github.com/aquasecurity/trivy/releases/download/v${trivy_version}/trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json && \
+# Download, verify, and install Trivy (SHA256 checksum and Cosign signature verification)
+RUN curl -fsSLO "https://github.com/aquasecurity/trivy/releases/download/v${trivy_version}/trivy_${trivy_version}_Linux-64bit.tar.gz" && \
+    curl -fsSLO "https://github.com/aquasecurity/trivy/releases/download/v${trivy_version}/trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json" && \
+    echo "${trivy_checksum} trivy_${trivy_version}_Linux-64bit.tar.gz" | sha256sum -c - && \
     cosign verify-blob \
-      --bundle trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json \
-      --certificate-identity "https://github.com/aquasecurity/trivy/.github/workflows/reusable-release.yaml@refs/tags/v${trivy_version}" \
-      --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-      trivy_${trivy_version}_Linux-64bit.tar.gz && \
+        --bundle trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json \
+        --certificate-identity "https://github.com/aquasecurity/trivy/.github/workflows/reusable-release.yaml@refs/tags/v${trivy_version}" \
+        --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+        trivy_${trivy_version}_Linux-64bit.tar.gz && \
     tar -xzf trivy_${trivy_version}_Linux-64bit.tar.gz --strip-components=0 trivy && \
     install -m 0755 trivy /usr/local/bin/trivy && \
-    rm trivy trivy_${trivy_version}_Linux-64bit.tar.gz
+    rm -f trivy \
+        trivy_${trivy_version}_Linux-64bit.tar.gz \
+        trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json
 
 # Install Python dependency
 RUN pip install --no-cache-dir requests==2.31.0

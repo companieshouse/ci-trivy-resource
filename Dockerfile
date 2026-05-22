@@ -48,7 +48,6 @@ FROM python:alpine3.21
 
 # Install Concourse resource assets
 COPY assets/ /opt/resource/
-RUN chmod +x /opt/resource/*
 
 # Install package dependencies
 RUN apk update && \

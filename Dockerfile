@@ -46,9 +46,6 @@ RUN curl -fsSLO "https://github.com/aquasecurity/trivy/releases/download/v${triv
 
 FROM python:alpine3.21
 
-# Install Concourse resource assets
-COPY assets/ /opt/resource/
-
 # Install package dependencies
 RUN apk update && \
     apk upgrade && \

@@ -1,178 +1,121 @@
-# Trivy Concourse Resource
+# ci-trivy-runner
 
-Scans docker image for os and library vunerabilities using [Trivy](https://aquasecurity.github.io/trivy/v0.19.2/).
-## Index
+This project provides a minimal, security-focused Docker image that bundles:
 
-[Source Configuration](#source-configuration)
+- [Trivy](https://github.com/aquasecurity/trivy) (vulnerability scanner)
+- Python runtime
+- Supporting tools (`jq`, `skopeo`, `bash`)
 
-[Behaviour](#behavior)
+## Key Features
 
-[Parameters](#parameters)
+- Defence-in-depth verification
+    - SHA256 checksum validation (integrity)
+    - Sigstore Cosign verification (provenance)
+- Multi-stage build - builder stage performs verification, final image contains only trusted artifacts
+- Minimal Alpine-based runtime
+- Pinned dependencies - reduces drift and improves reproducibility
+- Strict shell execution - `errexit`, `nounset`, and `pipefail` options enabled
 
-[Resource type](#resource-type)
+## Build Overview
 
-[Resource](#resource)
+### Multi-Stage Design
 
-[Development](#development)
+The `Dockerfile` comprises two stages:
 
-[Building Docker image](#building-docker-image)
+#### 1. Builder stage
 
-[Screenshots](#screenshots)
+Responsible for:
 
-### Note
+- Downloading binaries ([Cosign](https://github.com/sigstore/cosign), [Trivy](https://github.com/aquasecurity/trivy))
+- Verifying integrity (SHA256 checksum) and provenance (Sigstore Cosign verification)
+- Installing verified artifacts
 
-Please follow [official Trivy documentation](https://aquasecurity.github.io/trivy/v0.19.2/getting-started/quickstart) to know more about os vulnerability scanning of docker images
+This stage includes tools required for validation (e.g. `curl`, `sha256sum`, `cosign`).
 
-This Docker file and other files are sourced from [this official Github Repo](https://github.com/Comcast/trivy-resource/). 
+#### 2. Final runtime stage
 
-## Source Configuration
+- Based on `python:alpine`
+- Installs only required runtime dependencies
+- Copies verified Trivy binary from builder
 
-The configurations are split between source and params. The source configurations are earmarked such that they might 
-remain common throughout the pipeline, example output format of resource.
+This ensures that the final image does not contain build tools or temporary artifacts, only verified, trusted binaries.
 
-The params on the other hand can be tweaked per call. Example the tar file path to scan
+## Supply Chain Security
 
-* `type`: *Optional.* Scans either os or library vulns. Library vulns would require package.json or similar. Runs 
-  scan for `os` by default.
+This project follows a defence-in-depth approach to binary verification.
 
-* `json_server`: *Optional.* Ships/POSTs scan results to a json server url provided here
+### 1. Checksum Verification (Integrity)
 
-* `format`: *Optional.* scan output format, takes value `json|table`, by default outputs the scan results as table
+Each external artifact is verified using a pinned SHA256 checksum:
 
-* `image`: *Optional, if `path` parameter defined.* Image to be scanned from registry. The specified image will be 
-  downloaded as docker archive and scanned, might need credentials if registry pull needs authentication. 
+```shell
+echo "${checksum}  file" | sha256sum -c -
+```
+This ensures:
 
-* `user`: *Optional, if `path` parameter defined.* Docker registry username if required
+- The file has not been corrupted
+- The downloaded content matches the expected release artifact
 
-* `password`: *Optional, if `path` parameter defined.* Docker registry password if required
+### 2. Cosign Verification (Provenance)
 
-## Behavior
+After checksum validation, Cosign is used to verify:
 
-### `check`
+- The artifact was signed
+- The signature is tied to a trusted identity
+- The build originated from a trusted workflow
 
-Currently, a no-op
+#### Cosign self-verification
 
-### `in`
-
-Currently, a no-op
-
-### `out`: Runs the trivy vuln scanner
+Cosign is verified using Sigstore’s keyless signing:
 
 
-#### Parameters
-
-* `path`: *Required.* Path to OCI image tarball that is to be scanned for vulnerabilities
-
-* `fail`: *Optional.* Fails if vuln matches the given parameter, takes `HIGH|CRITICAL|MEDIUM|LOW` for values (case-insensitive). Multiple 
-  values can be comma separated. By default, runs scan for all the vuln types, and would have exit code `0`. If any 
-  fail option is specified, will have exit code `1` if there's vulnerabilities found of the type in scan.
-
-## Example
-
-These examples are excerpts from the test pipelines. To use this resource, its assumed that the image is built using 
-[OCI build task](https://github.com/concourse/oci-build-task#migrating-from-the-docker-image-resource) for `image_tar` 
-scanning. As of now 
-OCI built tar-balls and docker images are supported for scan. Images specified in source config will be downloaded 
-as docker-archive and scanned 
-Image tar can also be created using [docker 
-save]
-(https://docs.docker.com/engine/reference/commandline/save) command.
-
-**Note:** Its recommended tagging an image as `latest` in addition to the normal tagging during each build so that the scan 
-happens on the updated image everytime
-
-### Resource Type
-
-``` yaml
-- name: trivy
-  type: docker-image
-  source:
-    repository: <docker-registry-namespace>/trivy-resource #registry url and namespace where the resource image is pushed to
+```shell
+cosign verify-blob \
+    --bundle cosign-linux-amd64.sigstore.json \
+    --certificate-identity "keyless@projectsigstore.iam.gserviceaccount.com" \
+    --certificate-oidc-issuer "https://accounts.google.com" \
+    ...
 ```
 
-### Resource
+#### Trivy verification
 
-``` yaml
-- name: trivy-scan
-  type: trivy
-  source:
-    image: <docker-registry-namespace>/test # image that needs to be scanned
-  check_every: 24h
+Trivy is verified against its GitHub Actions release workflow:
+
+```shell
+cosign verify-blob \
+    --bundle "trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json" \
+    --certificate-identity "https://github.com/aquasecurity/trivy/.github/workflows/reusable-release.yaml@refs/tags/v${trivy_version}" \
+    --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+    ...
 ```
-**Note:** In order to enable the use of trivy scans, so it can be quality gated via the pipeline, there are a few
-source configs that are necessary. These just ensure that the pipeline will be interrupted on the finding of 
-vulnerabilities
 
-### Plan
+This ensures:
 
-#### Trivy scans after OCI build
+- The artifact was produced by the official project pipeline
+- It has not been tampered with after release
 
-``` yaml
-jobs:
-- name: build-release
-  public: true
-  plan:
-  - in_parallel:
-    - get: main-src
-      trigger: true
-  - task: OCI build
-    file: path/to/OCI/build/task # outputs image tar-ball
-  on_success:
-    put: trivy-scan
-    params:
-      path: image/image.tar
-      fail: HIGH
+## Usage
+
+### Building the image
+
+```shell
+docker build -t ci-trivy-runner .
 ```
-The above example fails the task (exit code `1`) on finding HIGH os vulnerabilities in the OCI tar. Not mentioning 
-anything in the `fail` 
-parameter would scan for all vulnerabilities and the stage would pass (exit code `0`).
 
-####**Important:** 
-One of `image` or `path` is mandatory for the scan to be done.
+## Version Pinning
 
-[Sample pipeline](example-pipeline.yml)
+Key components are explicitly versioned:
 
-## Development
+```dockerfile
+ARG cosign_version=...
+ARG trivy_version=...
+```
 
-Prerequisites:
-* python is required - version 3.8.10 is tested; earlier versions (3.x.x) may also work
-* docker is required - version 20.10.7 is tested; earlier versions may also work.
+With corresponding checksums:
 
-To use the newly built image, push it to a docker registry that's accessible to
-Concourse and configure your pipeline to use it:
-Make sure to [force-recheck the resource type](https://concourse-ci.org/managing-resource-types.html#fly-check-resource-type) for the new changes to reflect
+```dockerfile
+ARG cosign_checksum=...
+ARG trivy_checksum=...
+```
 
-
-## Building Docker image
-
-To build docker image of the resource, execute the following command.
-The docker command should be executed on the path that has the `Dockerfile`
-
-`docker build -t <docker-registry>/<namespace>/trivy-resource:<tag>`
-
-Please make sure the user is authenticated against the respective docker registry
-
-The build image has to be pushed to registry before using the same in concourse. 
-
-`docker push <docker-registry>/<namespace>/trivy-resource:<tag>`
-
-Docker References:
-
-[Docker login](https://docs.docker.com/engine/reference/commandline/login/),
-[Docker tag](https://docs.docker.com/engine/reference/commandline/tag/),
-[Docker build](https://docs.docker.com/engine/reference/commandline/build/)
-[Docker push](https://docs.docker.com/engine/reference/commandline/push/)
-
-## Screenshots
-
-#### Scans passing in concourse
-
-![](screens/pass.jpg)
-
-#### Scans failing at `HIGH` vulns in concourse
-
-![](screens/fail.jpg)
-
-#### Nginx downloaded from hub and scanned
-
-![](screens/nginx-fail.jpg)
+This ensures reproducible builds, controlled upgrade path, and protects against upstream changes.

@@ -3,7 +3,6 @@
 This project provides a minimal, security-focused Docker image that bundles:
 
 - [Trivy](https://github.com/aquasecurity/trivy) (vulnerability scanner)
-- Python runtime
 - Supporting tools (`jq`, `skopeo`, `bash`)
 
 ## Key Features

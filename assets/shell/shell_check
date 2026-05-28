@@ -1,9 +1,0 @@
-#!/bin/sh
-
-source $(dirname $0)/common.sh
-
-warn '`check` is not supported by this resource'
-
-# empty response to keep Concourse happy
-
-echo "[]" >&3

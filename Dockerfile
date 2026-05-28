@@ -1,4 +1,4 @@
-FROM python:alpine3.21 AS builder
+FROM alpine:3.23 AS builder
 
 ARG cosign_version=3.0.6
 ARG cosign_checksum=c956e5dfcac53d52bcf058360d579472f0c1d2d9b69f55209e256fe7783f4c74
@@ -11,9 +11,9 @@ SHELL ["/bin/ash", "-euo", "pipefail", "-c"]
 RUN apk update && \
     apk upgrade && \
     apk add --no-cache \
-        bash=5.2.37-r0 \
-        curl=8.14.1-r2 \
-        outils-sha256=0.13-r1
+        bash=5.3.3-r1 \
+        curl=8.19.0-r0 \
+        outils-sha256=0.14-r0
 
 # Download, verify, and install Cosign
 RUN curl -fsSLO https://github.com/sigstore/cosign/releases/download/v${cosign_version}/cosign-linux-amd64 && \
@@ -44,18 +44,15 @@ RUN curl -fsSLO "https://github.com/aquasecurity/trivy/releases/download/v${triv
         "trivy_${trivy_version}_Linux-64bit.tar.gz" \
         "trivy_${trivy_version}_Linux-64bit.tar.gz.sigstore.json"
 
-FROM python:alpine3.21
+FROM alpine:3.23
 
 # Install package dependencies
 RUN apk update && \
     apk upgrade && \
     apk add --no-cache \
-         bash=5.2.37-r0 \
-         jq=1.7.1-r0 \
-         skopeo=1.16.1-r5
+         bash=5.3.3-r1 \
+         jq=1.8.1-r0 \
+         skopeo=1.20.0-r8
 
 # Install Trivy
 COPY --from=builder /usr/local/bin/trivy /usr/local/bin/trivy
-
-# Install Python dependency
-RUN pip install --no-cache-dir requests==2.31.0

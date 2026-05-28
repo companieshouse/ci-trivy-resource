@@ -33,7 +33,7 @@ This stage includes tools required for validation (e.g. `curl`, `sha256sum`, `co
 
 #### 2. Final runtime stage
 
-- Based on `python:alpine`
+- Based on `alpine`
 - Installs only required runtime dependencies
 - Copies verified Trivy binary from builder
 

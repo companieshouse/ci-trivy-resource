@@ -2,7 +2,7 @@ FROM alpine:3.23 AS builder
 
 ARG cosign_version=3.0.6
 ARG cosign_checksum=c956e5dfcac53d52bcf058360d579472f0c1d2d9b69f55209e256fe7783f4c74
-ARG trivy_version=0.70.0
+ARG trivy_version=0.74.0
 ARG trivy_checksum=8b4376d5d6befe5c24d503f10ff136d9e0c49f9127a4279fd110b727929a5aa9
 
 # Set errexit, nounset, and pipefail shell options for added safety

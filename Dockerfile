@@ -12,7 +12,7 @@ RUN apk update && \
     apk upgrade && \
     apk add --no-cache \
         bash=5.3.3-r1 \
-        curl=8.19.0-r0 \
+        curl=8.22.0-r0 \
         outils-sha256=0.14-r0
 
 # Download, verify, and install Cosign
@@ -52,9 +52,9 @@ RUN apk update && \
     apk add --no-cache \
          bash=5.3.3-r1 \
          git=2.52.0-r0 \
-         jq=1.8.1-r0 \
+         jq=1.8.2-r0 \
          openssh=10.2_p1-r0 \
-         skopeo=1.20.0-r8
+         skopeo=1.20.1-r0
 
 # Install Trivy
 COPY --from=builder /usr/local/bin/trivy /usr/local/bin/trivy
